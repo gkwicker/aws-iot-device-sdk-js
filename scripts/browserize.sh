@@ -68,7 +68,7 @@ if [ ! -f $BROWSER_BUNDLE_DIR/aws-iot-sdk-browser-bundle.js ]; then
 # Create the browser bundle and delete all working files/directories.  Allow
 # aws-iot-device-sdk and aws-sdk to be required by other browserify bundles.
 #
-    (cd $BROWSER_BUNDLE_DIR; rm -f bundle.js; $BROWSERIFY -r aws-iot-device-sdk -r aws-sdk -o aws-iot-sdk-browser-bundle.js; rm -rf node_modules; rm -f aws-iot-device-sdk.tgz)
+    (cd $BROWSER_BUNDLE_DIR; rm -f bundle.js; $BROWSERIFY -r amazon-cognito-identity-js -r aws-iot-device-sdk -r aws-sdk -o aws-iot-sdk-browser-bundle.js; rm -rf node_modules; rm -f aws-iot-device-sdk.tgz)
     echo ${0##*/}": prepared browser bundle"
 fi
 
@@ -99,7 +99,7 @@ elif [ $# -eq 1 ] || [ $# -eq 2 ]; then
    fi
 
    echo "browserifying "$1" and placing result in "$APP_PATH/$OUTPUT_FILE"..."
-   (cd $APP_PATH""; $BROWSERIFY -x aws-sdk -x aws-iot-device-sdk $APP_NAME -o $OUTPUT_FILE)
+   (cd $APP_PATH""; $BROWSERIFY -x aws-sdk -x aws-iot-device-sdk -x amazon-cognito-identity-js $APP_NAME -o $OUTPUT_FILE)
    cp $BROWSER_BUNDLE_DIR/aws-iot-sdk-browser-bundle.js $APP_PATH
 else
    echo "Usage: "${0##*/}" [javascript application] [output file]"

@@ -21,9 +21,10 @@
 // 
 var AWS = require('aws-sdk');
 var AWSIoTData = require('aws-iot-device-sdk');
+var AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 var AWSConfiguration = require('./aws-configuration.js');
 
-console.log('Loaded AWS SDK for JavaScript and AWS IoT SDK for Node.js');
+console.log('Loaded AWS, AWS IoT, and Amazon Cognito Identity SDKs');
 
 //
 // Remember our current subscription topic here.
@@ -44,10 +45,6 @@ var clientId = 'mqtt-explorer-' + (Math.floor((Math.random() * 100000) + 1));
 // Initialize our configuration.
 //
 AWS.config.region = AWSConfiguration.region;
-
-AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-   IdentityPoolId: AWSConfiguration.poolId
-});
 
 //
 // Create the AWS IoT device object.  Note that the credentials must be 
@@ -71,11 +68,11 @@ const mqttClient = AWSIoTData.device({
    //
    protocol: 'wss',
    //
-   // Set the maximum reconnect time to 8 seconds; this is a browser application
+   // Set the maximum reconnect time to 2 seconds; this is a browser application
    // so we don't want to leave the user waiting too long for reconnection after
    // re-connecting to the network/re-opening their laptop/etc...
    //
-   maximumReconnectTimeMs: 8000,
+   maximumReconnectTimeMs: 2000,
    //
    // Enable console debugging information (optional)
    //
@@ -89,37 +86,17 @@ const mqttClient = AWSIoTData.device({
    sessionToken: ''
 });
 
-//
-// Attempt to authenticate to the Cognito Identity Pool.  Note that this
-// example only supports use of a pool which allows unauthenticated 
-// identities.
-//
-var cognitoIdentity = new AWS.CognitoIdentity();
-AWS.config.credentials.get(function(err, data) {
-   if (!err) {
-      console.log('retrieved identity: ' + AWS.config.credentials.identityId);
-      var params = {
-         IdentityId: AWS.config.credentials.identityId
-      };
-      cognitoIdentity.getCredentialsForIdentity(params, function(err, data) {
-         if (!err) {
-            //
-            // Update our latest AWS credentials; the MQTT client will use these
-            // during its next reconnect attempt.
-            //
-            mqttClient.updateWebSocketCredentials(data.Credentials.AccessKeyId,
-               data.Credentials.SecretKey,
-               data.Credentials.SessionToken);
-         } else {
-            console.log('error retrieving credentials: ' + err);
-            alert('error retrieving credentials: ' + err);
-         }
-      });
-   } else {
-      console.log('error retrieving identity:' + err);
-      alert('error retrieving identity: ' + err);
-   }
-});
+var authenticationData = {
+    Username : '',   // input field will place username here
+    Password : ''    // input field will place password here
+};
+
+var poolData = {
+    UserPoolId: AWSConfiguration.UserPoolId,
+    ClientId: AWSConfiguration.UserPoolClientId
+};
+
+var userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
 //
 // Connect handler; update div visibility and fetch latest shadow documents.
@@ -143,8 +120,10 @@ window.mqttClientConnectHandler = function() {
 //
 window.mqttClientReconnectHandler = function() {
    console.log('reconnect');
-   document.getElementById("connecting-div").style.visibility = 'visible';
-   document.getElementById("explorer-div").style.visibility = 'hidden';
+   if( document.getElementById("authentication-div").style.visibility === 'hidden' ) {
+       document.getElementById("connecting-div").style.visibility = 'visible';
+       document.getElementById("explorer-div").style.visibility = 'hidden';
+   }
 };
 
 //
@@ -153,6 +132,83 @@ window.mqttClientReconnectHandler = function() {
 window.isUndefined = function(value) {
    return typeof value === 'undefined' || typeof value === null;
 };
+
+window.updateThingName = function() {
+    authenticationData.Username =  document.getElementById('thing-name').value;
+}
+
+window.updatePassword = function() {
+    authenticationData.Password =  document.getElementById('password').value;
+}
+
+window.authenticate = function() {
+    if(( authenticationData.Username === '') || ( authenticationData.Password === '' )) {
+        alert('Thing Name & Password required');
+    }
+    else {
+       document.getElementById("connecting-div").style.visibility = 'visible';
+       document.getElementById("authentication-div").style.visibility = 'hidden';
+       var userData = {
+	       Username: authenticationData.Username,
+	       Pool: userPool,
+       };
+        var cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+        var authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(
+		authenticationData
+        );
+        document.getElementById('thing-name').value = '';
+	document.getElementById('password').value = '';
+	authenticationData.Username =  '';
+	authenticationData.Password =  '';
+
+        cognitoUser.authenticateUser(authenticationDetails, {
+		onSuccess: function(result) {
+			var accessToken = result.getAccessToken().getJwtToken();
+			var key ='cognito-idp.' + AWSConfiguration.region + '.amazonaws.com/' + AWSConfiguration.UserPoolId;
+			console.log('key = ' + key );
+
+			AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+			IdentityPoolId: AWSConfiguration.IdentityPoolId, // your identity pool id here
+			Logins: {
+				// NOTE: dynamic key creation
+				[key]: result.getIdToken().getJwtToken()
+			},
+		});
+
+		//refreshes credentials using AWS.CognitoIdentity.getCredentialsForIdentity()
+		AWS.config.credentials.refresh(error => {
+			if (error) {
+				console.error(error);
+			} else {
+				// Instantiate aws sdk service objects now that the credentials have been updated.
+				console.log('Successfully logged in!');
+				console.log('Access Key ID: ' + AWS.config.credentials.accessKeyId );
+				console.log('Secret Key: ' + AWS.config.credentials.secretAccessKey );
+				console.log('Session Token: ' + AWS.config.credentials.sessionToken );
+				console.log('Identity ID: ' + AWS.config.credentials.identityId );
+				//
+				// Update our latest AWS credentials; the MQTT client will use these
+				// during its next reconnect attempt.
+				//
+				mqttClient.updateWebSocketCredentials(AWS.config.credentials.accessKeyId,
+				AWS.config.credentials.secretAccessKey,
+				AWS.config.credentials.sessionToken);
+			}
+		});
+	},
+
+	onFailure: function(err) {
+		alert(err.message || JSON.stringify(err));
+                document.getElementById("connecting-div").style.visibility = 'hidden';
+                document.getElementById("authentication-div").style.visibility = 'visible';
+	},
+
+	newPasswordRequired: function( err ) {
+			console.error('new password required!');
+	}
+});
+    }
+}
 
 //
 // Message handler for lifecycle events; create/destroy divs as clients
@@ -211,6 +267,6 @@ mqttClient.on('message', window.mqttClientMessageHandler);
 //
 // Initialize divs.
 //
-document.getElementById('connecting-div').style.visibility = 'visible';
+document.getElementById('connecting-div').style.visibility = 'hidden';
 document.getElementById('explorer-div').style.visibility = 'hidden';
-document.getElementById('connecting-div').innerHTML = '<p>attempting to connect to aws iot...</p>';
+document.getElementById('connecting-div').innerHTML = '<p>connecting to your thing...</p>';

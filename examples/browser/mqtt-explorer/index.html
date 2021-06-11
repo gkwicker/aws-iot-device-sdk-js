@@ -20,7 +20,12 @@
 <body>
 
    <div class="spacer" id="spacer"></div>
-   <div class="block" id="connecting-div"></div>
+   <div class="block" id="authentication-div">
+         <p>thing name:<input type="text" name="thing-name" id="thing-name" value="" onchange="updateThingName()"></p>
+         <p>password:<input type="password" name="password" id="password" value="" onchange="updatePassword()"></p>
+         <input type="button" id="submit-auth" name="submit-auth" value="Submit" onclick="authenticate()"/></p>
+   </div>
+   <div class="block" id="connecting-div" style="visibility:hidden"></div>
    <div class="block" id="explorer-div" style="visibility:hidden">
  
       <div class="settings" id="settings-header-div">

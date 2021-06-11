@@ -14,6 +14,8 @@
  */
 var AWS = require('aws-sdk');
 var AWSIoTData = require('aws-iot-device-sdk');
+var AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
 module.exports.AWS = AWS;
 module.exports.AWSIoTData = AWSIoTData;
+module.exports.AmazonCognitoIdentity = AmazonCognitoIdentity;

@@ -18,9 +18,11 @@
  * example application.
  */
 var awsConfiguration = {
-   poolId: YOUR_COGNITO_IDENTITY_POOL_ID_GOES_HERE, // 'YourCognitoIdentityPoolId'
-   host: YOUR_AWS_IOT_ENDPOINT_GOES_HERE, // 'YourAwsIoTEndpoint', e.g. 'prefix.iot.us-east-1.amazonaws.com'
-   region: YOUR_AWS_REGION_GOES_HERE // 'YourAwsRegion', e.g. 'us-east-1'
+   IdentityPoolId: YOUR_COGNITO_AUTHENTICATED_IDENTITY_POOL_ID_GOES_HERE,  // Cognito Authenticated Identity Pool Id
+   host: YOUR_IOT_CORE_ENDPOINT_GOES_HERE,       // IoT Core endpoint
+   region: YOUR_AWS_REGION_GOES_HERE,          // 'YourAwsRegion', e.g. 'us-east-1'
+   UserPoolId: YOUR_COGNITO_USER_POOL_ID_GOES_HERE,                 // Cognito User Pool Id
+   UserPoolClientId: YOUR_COGNITO_USER_POOL_CLIENT_ID_GOES_HERE     // Cognito User Pool Client Id
 };
 module.exports = awsConfiguration;
 

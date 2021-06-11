@@ -28,19 +28,23 @@
     "mqtt"
   ],
   "dependencies": {
+    "amazon-cognito-identity-js": "^5.0.2",
+    "amazon-cognito-identity-js-node": "^0.0.3",
+    "aws-iot-device-sdk": "^2.2.8",
+    "browserify": "^17.0.0",
     "crypto-js": "3.1.6",
     "minimist": "1.2.5",
     "mqtt": "4.2.6",
     "websocket-stream": "^5.0.1"
   },
   "devDependencies": {
-    "gulp": "^3.9.0",
+    "gulp": "^3.9.1",
     "gulp-beautify": "^2.0.0",
     "gulp-concat": "^2.6.0",
-    "gulp-coverage": "^0.3.38",
-    "gulp-jscs": "^4.0.0",
+    "gulp-coverage": "^0.0.4",
+    "gulp-jscs": "^3.0.2",
     "gulp-jshint": "^2.0.0",
-    "gulp-mocha": "^3.0.1",
+    "gulp-mocha": "^6.0.0",
     "jshint": "^2.9.1",
     "jshint-stylish": "^2.2.1",
     "rewire": "^2.5.1",
